@@ -1,0 +1,168 @@
+---
+title: Distributed Online Marketplace
+date: 04-01-2025
+description: A Distributed and Microservices based Online Marketplace, deployed on Kubernetes.
+image: ../assets/online-marketplace-cover.jpg
+draft: false
+tags:
+  - fuck
+info:
+  - text: GitHub
+    link: https://github.com/pinakinchoudhary/online-marketplace-spring
+    icon:
+      type: lucide
+      name: github
+---
+
+Welcome to the Online Marketplace project! This repository hosts a microservices-based application implemented using Spring Boot. Our system is segmented into three services – Account, Marketplace, and Wallet – each designed for scalability, resilience, and safe concurrent operations. In this document, you will find an in-depth discussion of our implementation details, concurrency controls, and deployment strategies, along with sample code snippets to provide extra clarity.
+
+## Project Overview
+
+Our application demonstrates how to leverage a microservices architecture to build a robust online marketplace. Key features include:
+
+- Service isolation with individual Docker containers.
+- Use of Kubernetes for deployment, scaling, and fault tolerance.
+- Advanced concurrency controls using Java locks, optimistic locking, and retry mechanisms.
+- Atomic operations and inter-service rollback strategies to ensure data consistency.
+
+## Detailed Implementation
+
+### Service Implementation
+
+#### Account Service
+- **Responsibilities:** User creation, deletion, and discount management.
+- **Normal Business Logic:**  
+  The Account Service handles the creation of new users by validating input (such as ensuring that name, email, and id are provided) and ensuring that no duplicate email exists. On deletion, it cascades changes to related services by notifying them to remove dependent data.
+- **Concurrency:** Uses global write locks and optimistic locking to safely update discount fields.
+- **Code Insight:**
+  ```java title="AccountServiceController.java"
+  userOperationsLock.writeLock().lock();
+  try {
+      User user = userRepository.findById(id).orElseThrow( ... );
+      if (user.getDiscount_availed()) {
+          return ResponseEntity.ok("Discount already availed");
+      }
+      userRepository.updateDiscountAvailedByIdById(user.getId(), true);
+  } finally {
+      userOperationsLock.writeLock().unlock();
+  }
+  ```
+
+#### Marketplace Service
+- **Responsibilities:** Processing orders, managing product inventory, and coordinating with Wallet and Account Services.
+- **Normal Business Logic:**  
+  Orders are received with user details and order items. The service validates each order item (ensuring positive quantities and available stock), calculates the total cost (applying a discount if eligible), and updates the order status from "PLACED" to "DELIVERED" or "CANCELLED". If any step (like payment or stock adjustment) fails, previously committed actions are reverted.
+- **Techniques:** Employs per-product and per-order locks using Java's ConcurrentHashMap and ReentrantLock.
+- **Example:**
+  ```java title="MarketplaceServiceController.java"
+  Lock productLock = productLocks.computeIfAbsent(productId, k -> new ReentrantLock());
+  if (!productLock.tryLock(3, TimeUnit.SECONDS)) {
+      throw new ResponseStatusException(HttpStatus.CONFLICT, "Could not acquire lock, try later.");
+  }
+  try {
+      productRepository.decreaseStockQuantityByProduct_id(productId, quantity);
+  } finally {
+      productLock.unlock();
+  }
+  ```
+
+#### Wallet Service
+- **Responsibilities:** Handling wallet credit and debit operations.
+- **Normal Business Logic:**  
+  The Wallet Service is responsible for maintaining user balances. When a credit or debit request is issued, it verifies the payload and ensures that debits do not result in negative balances. A new wallet is created for a user if one does not already exist—ensuring a consistent state.
+- **Concurrency:** Uses a global read-write lock to serialize write operations and allow parallel reads.
+- **Insightful Snippet:**
+  ```java title="WalletServiceController.java"
+  globalWalletLock.writeLock().lock();
+  try {
+      // Validate payload and update wallet
+      Wallet wallet = walletRepository.findByUser_id(user_id)
+          .orElseGet(() -> new Wallet(user_id, 0));
+      wallet.setBalance(wallet.getBalance() + amount);
+      walletRepository.save(wallet);
+  } finally {
+      globalWalletLock.writeLock().unlock();
+  }
+  ```
+
+### Concurrency and Synchronization Techniques
+
+We handle concurrency at multiple layers by employing:
+- **Optimistic Locking & Retries:**  
+  Used throughout critical update operations. For instance, the `@Retryable` annotation in the WalletServiceController ensures that temporary conflicts during wallet updates are retried.
+- **Locking with Timeouts:**  
+  To avoid deadlocks, locks (such as per-product locks) are acquired with a timeout. If a lock is not acquired in time, a conflict response is formulated.
+- **Granular Locking:**  
+  The combination of global locks (for overall wallet operations) and per-entity locks (for individual product and order modifications) minimizes contention and maximizes throughput.
+
+### Kubernetes Deployment
+
+Our deployment strategy involves:
+- **Minikube for local testing:**  
+  The provided launch script Boots up a Kubernetes cluster via Minikube, builds Docker images, and deploys our services with YAML config files.
+- **Kubernetes YAML Examples:**
+  ```yaml title="marketplaceservice.yaml"
+  apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    name: marketplaceservice
+  spec:
+    replicas: 3
+    selector:
+      matchLabels:
+        app: marketplaceservice
+    template:
+      metadata:
+        labels:
+          app: marketplaceservice
+      spec:
+        containers:
+        - name: marketplaceservice
+          image: marketplaceservice:latest
+          imagePullPolicy: Never
+          ports:
+          - containerPort: 8080
+  ---
+
+  apiVersion: v1
+  kind: Service
+  metadata:
+    name: marketplaceservice
+  spec:
+    selector:
+      app: marketplaceservice
+    ports:
+    - protocol: TCP
+      port: 8081
+      targetPort: 8080
+    type: LoadBalancer
+  ```
+  This defines 3 replicas of the Marketplace Service, each accessible via a LoadBalancer service on port 8081.
+
+- **Port Forwarding & Tunneling:**  
+  The launch script arranges port forwarding so that services are accessible locally even as they run in Kubernetes.
+
+### Advanced Concepts and Patterns
+
+Our project incorporates several advanced development patterns:
+- **Retry and Circuit Breakers:**  
+  All external calls use retry logic, often with exponential backoff, to handle transient failures gracefully.
+- **Atomic Rollbacks:**  
+  In scenarios such as order placement, if any operation fails (e.g., discount update or stock decrement), a coordinated rollback is executed. For example:
+  ```java title="MarketplaceServiceController.java"
+  // If wallet debit fails, revert discount update and vice versa.
+  if (walletUpdated) {
+      updateWallet(userId, "credit", totalCost);
+  }
+  if (discountUpdated) {
+      resetDiscount(userId);
+  }
+  ```
+- **Idempotent Operations:**  
+  Methods like discount updates and order cancellations are idempotent, ensuring that repeated calls do not disrupt data integrity.
+- **Service Coordination:**  
+  Inter-service communication via REST is built with error handling to maintain consistency across distributed transactions.
+
+## Conclusion
+
+This project demonstrates the interplay between modern microservices design, advanced concurrency controls, and robust orchestration with Kubernetes. The detailed implementation showcases resilient patterns, such as fine-grained locking, optimistic concurrency, and coordinated rollback strategies, ensuring data consistency and high availability.

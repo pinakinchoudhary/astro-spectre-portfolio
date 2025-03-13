@@ -13,7 +13,14 @@
       "type": "lucide",
       "name": "school"
     },
-    "type": "lucide",
-    "text": "Indian Institute of Science, Bangalore"
+    "text": "Indian Institute of Science"
+  },
+  {
+    "id": 3,
+    "icon": {
+      "type": "lucide",
+      "name": "map-pin"
+    },
+    "text": "Bangalore, India"
   }
 ]
