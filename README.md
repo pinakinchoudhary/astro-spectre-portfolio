@@ -1,51 +1,42 @@
-# Astro on Netlify Platform Starter
+![Spectre, a terminal-inspired theme for Astro.](./images/README.png)
 
-[Live Demo](https://astro-platform-starter.netlify.app/)
+Spectre is a terminal-inspired theme for Astro, built using TypeScript and Astro.
 
-A modern starter based on Astro.js, Tailwind, daisyUI, and [Netlify Core Primitives](https://docs.netlify.com/core/overview/#develop) (Edge Functions, Image CDN, Blob Store).
+## Getting Started
 
-## Astro Commands
+[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/louisescher/spectre/tree/main)
+[![Open with CodeSandbox](https://assets.codesandbox.io/github/button-edit-lime.svg)](https://codesandbox.io/p/sandbox/github/louisescher/spectre/tree/main)
 
-All commands are run from the root of the project, from a terminal:
+Alternatively, you can create a new Astro project with Spectre like this:
 
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
+```bash
+# npm
+npm create astro@latest -- --template louisescher/spectre
 
-## Deploying to Netlify
+# pnpm
+pnpm create astro@latest --template louisescher/spectre
 
-[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/netlify-templates/astro-platform-starter)
-
-## Developing Locally
-
-| Prerequisites             |
-| :------------------------ |
-| [Node.js](https://nodejs.org/) v18.14+. |
-| (optional) [nvm](https://github.com/nvm-sh/nvm) for Node version management. |
-
-1. Clone this repository, then run `npm install` in its root directory.
-
-2. For the starter to have full functionality locally (e.g. edge functions, blob store), please ensure you have an up-to-date version of Netlify CLI. Run:
-
-```
-npm install netlify-cli@latest -g
+# yarn
+yarn create astro --template louisescher/spectre
 ```
 
-3. Link your local repository to the deployed Netlify site. This will ensure you're using the same runtime version for both local development and your deployed site.
+## Features
 
-```
-netlify link
-```
+- 100 / 100 Lighthouse performance
+- Responsive for all screen sizes
+- Fully accessible
+- Type-Safe
+- Auto-generated sitemap
+- Markdown / MDX Support
+- Builds on content collections
+- Search powered by [pagefind](https://pagefind.app)
+- Comments powered by [giscus](https://giscus.app) (can be turned off)
+- More!
 
-4. Then, run the Astro.js development server via Netlify CLI:
+## Curious?
 
-```
-netlify dev
-```
+Head over to [the preview page](https://spectre.louisescher.dev) to find out more!
 
-If your browser doesn't navigate to the site automatically, visit [localhost:8888](http://localhost:8888).
+### Spectre Integration
+
+If you want to know more about how the custom integration that is used in the `astro.config.ts` file works, head over to the [integration's own README](https://github.com/louisescher/spectre/tree/master/package)!

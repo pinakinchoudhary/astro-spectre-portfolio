@@ -1,21 +1,121 @@
 ---
+import '../styles/index.css';
+
+import ProfilePicture from '../assets/pfp.png';
+
+import Card from '../components/Card.astro';
 import Layout from '../layouts/Layout.astro';
-import ContextAlert from '../components/ContextAlert.astro';
-import Markdown from '../components/Markdown.astro';
+import ImageGlow from '../components/ImageGlow.astro';
+import Icon from '../components/Icon.astro';
+import { getCollection } from 'astro:content';
+import { getEntry } from 'astro:content';
+import { render } from 'astro:content';
+import { name, openGraph } from 'spectre:globals';
 
-const explainer = `
-An Astro website can go way beyond static pages - on the right platform.
+const [posts, projects, about, workExperience, quickInfo, socials] = await Promise.all([
+	getCollection('posts', (post) => post.data.draft !== true),
+	getCollection('projects'),
+	getEntry('other', 'about'),
+	getCollection('workExperience'),
+	getCollection('quickInfo'),
+	getCollection('socials')
+]);
 
-Netlify supports not only [Streaming SSR](https://docs.astro.build/en/guides/server-side-rendering/#html-streaming) and fast [Edge Middleware](https://docs.astro.build/en/guides/middleware/), but also [on-demand revalidation](https://www.netlify.com/blog/cache-tags-and-purge-api-on-netlify/) and [stale-while-revalidate](https://www.netlify.com/blog/swr-and-fine-grained-cache-control/). 
-Any page or data can be rebuilt only when needed, without site visitors ever getting a performance hit.
-`;
+// biome-ignore lint/style/noNonNullAssertion: Should always be defined.
+const { Content: About } = await render(about!);
 ---
 
-<Layout title="Welcome to Astro.">
-    <ContextAlert class="mb-4" />
-    <h1 class="mb-10">Netlify Platform Starter for Astro</h1>
-    <Markdown content={explainer} class="text-lg mb-10" />
-    <p class="mb-8">
-        <a href="https://docs.netlify.com/frameworks/astro/" class="btn btn-lg btn-primary sm:btn-wide">Read the Docs</a>
-    </p>
+<Layout
+	title={openGraph.home.title || name}
+	description={openGraph.home.description}
+	pagefindIgnore
+>
+	<div class="layout-grid-left" slot="left">
+		<Card class="flex-col-card">
+			<ImageGlow quality={100} width={220} height={250} src={ProfilePicture} alt="Louis looking out of a window" loading='eager' />
+			<h2>{name}</h2>
+			<ul class="overview-list">
+				{quickInfo.map((info) => (
+					<li>
+						<Icon type={info.data.icon.type} name={info.data.icon.name as any} width={24} height={24} class='glow-icon' />
+						<span>{info.data.text}</span>
+					</li>
+				))}
+			</ul>
+		</Card>
+		<Card>
+			<h3 class="no-mt">Socials</h3>
+			<ul class="overview-list">
+				{socials.map((item) => (
+					<li>
+						<a href={item.data.link} class="socials-link">
+							<Icon type={item.data.icon.type} name={item.data.icon.name as any} width={24} height={24} class='glow-icon' />
+							<span>{item.data.text}</span>
+						</a>
+					</li>
+				))}
+			</ul>
+		</Card>
+	</div>
+	<div class="layout-grid-right" slot="right">
+		<Card>
+			<div class="header-container">
+				<Icon type='lucide' name="user" width={24} height={24} class='glow-icon' />
+				<h2>About me</h2>
+			</div>
+			<div class="prose">
+				<About />
+			</div>
+		</Card>
+		<Card>
+			<div class="header-container">
+				<Icon type='lucide' name="folder-git" width={24} height={24} class='glow-icon' />
+				<h2>Latest Projects</h2>
+			</div>
+			<div class="content-container">
+				{projects.sort((a, b) => b.data.date.getTime() - a.data.date.getTime()).slice(0, 2).map((project) => (
+					<a href={`/projects/${project.id}`} class="post-container">
+						<div class="post-header">
+							<h3>{project.data.title}</h3>
+							<span class="post-date">{project.data.date.toLocaleDateString()}</span>
+						</div>
+						<span>{project.data.description}</span>
+					</a>
+				))}
+			</div>
+		</Card>
+		<Card>
+			<div class="header-container">
+				<Icon type='lucide' name="rss" width={24} height={24} class='glow-icon' />
+				<h2>Latest Posts</h2>
+			</div>
+			<div class="content-container">
+				{posts.sort((a, b) => b.data.createdAt.getTime() - a.data.createdAt.getTime()).slice(0, 2).map((post) => (
+					<a href={`/blog/${post.id}`} class="post-container">
+						<div class="post-header">
+							<h3>{post.data.title}</h3>
+							<span class="post-date">{post.data.createdAt.toLocaleDateString()}</span>
+						</div>
+						<span>{post.data.description}</span>
+					</a>
+				))}
+			</div>
+		</Card>
+		<!-- <Card>
+			<div class="header-container">
+				<Icon type='lucide' name="briefcase-business" width={24} height={24} class='glow-icon' />
+				<h2>Work Experience</h2>
+			</div>
+			<div class="work-experience-container">
+				{workExperience.reverse().map((entry) => (
+					<div class="work-experience-entry">
+						<span class="work-experience-duration">{entry.data.duration}</span>
+						<h3 class="work-experience-company">{entry.data.company}</h3>
+						<span class="work-experience-role">{entry.data.title}</span>
+						<p class="work-experience-desc">{entry.data.description}</p>
+					</div>
+				))}
+			</div>
+		</Card> -->
+	</div>
 </Layout>
