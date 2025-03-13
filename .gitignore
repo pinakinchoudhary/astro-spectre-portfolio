@@ -1,7 +1,5 @@
 # build output
 dist/
-
-# generated types
 .astro/
 
 # dependencies
@@ -23,3 +21,5 @@ pnpm-debug.log*
 # jetbrains setting folder
 .idea/
 .vscode/
+# Local Netlify folder
+.netlify

@@ -6,12 +6,11 @@ import sitemap from '@astrojs/sitemap';
 import spectre from './package/src';
 
 import node from '@astrojs/node';
-import { spectreDark } from './src/ec-theme';
+// import { spectreDark } from './src/ec-theme';
 
 // https://astro.build/config
 export default defineConfig({
-  site: 'https://pinakinchoudhary.github.io',
-  base: '/spectre-portfolio',
+  site: 'https://pinakinchoudhary.com',
   output: 'static',
   integrations: [
     expressiveCode({
